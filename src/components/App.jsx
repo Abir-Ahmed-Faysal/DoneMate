@@ -1,6 +1,6 @@
-// src/App.jsx
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import TaskInput from "./TaskInput";
 import TaskList from "./TaskList";
 import {
   getFromLocal,
@@ -10,13 +10,13 @@ import {
   saveToLocal,
 } from "../utilities/SavetoLocal.js";
 import "../style.css";
-import TaskInput from "./TaskInput";
 
 export default function App() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All");
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const tabs = ["All", "Pending", "Completed"];
 
@@ -27,12 +27,10 @@ export default function App() {
     setLoading(false);
   }, []);
 
-  // Add a new task and persist
-  const addTask = ({ name, value }) => {
+  const addTask = ({ name }) => {
     const newTask = {
       id: Date.now(),
       name,
-      value: Number(value) || 0,
       status: "pending",
       date: new Date().toLocaleString(),
     };
@@ -40,7 +38,6 @@ export default function App() {
     setItems(updated);
   };
 
-  // Update an existing task (partial updates allowed)
   const updateTask = (id, updates) => {
     const updatedArray = items.map((it) =>
       it.id === id ? { ...it, ...updates } : it
@@ -49,25 +46,48 @@ export default function App() {
     updateInLocal("todos", { id, ...updates });
   };
 
-  // Delete task completely
   const deleteTask = (id) => {
     const updated = deleteFromLocal("todos", id);
     setItems(updated);
+    setSelectedIds((prev) => prev.filter((pid) => pid !== id));
   };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((item) => {
       if (activeTab === "Pending" && item.status !== "pending") return false;
-      if (activeTab === "Completed" && item.status !== "completed")
-        return false;
+      if (activeTab === "Completed" && item.status !== "complete") return false;
       if (!q) return true;
-      return (
-        (item.name && item.name.toLowerCase().includes(q)) ||
-        String(item.value).toLowerCase().includes(q)
-      );
+      return item.name && item.name.toLowerCase().includes(q);
     });
   }, [items, activeTab, query]);
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = (checked) => {
+    if (checked) {
+      setSelectedIds(filtered.map((t) => t.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const markSelectedComplete = () => {
+    if (!selectedIds || selectedIds.length === 0) return;
+    const now = new Date().toLocaleString();
+    const updated = items.map((it) =>
+      selectedIds.includes(it.id)
+        ? { ...it, status: "complete", date: now }
+        : it
+    );
+    setItems(updated);
+    saveToLocal("todos", updated);
+    setSelectedIds([]);
+  };
 
   return (
     <div className="app-container">
@@ -95,26 +115,16 @@ export default function App() {
           onChange={(e) => setQuery(e.target.value)}
           className="search-input"
         />
-        <button
-          onClick={() => {
-            setItems([]);
-            saveToLocal("todos", []);
-          }}
-          className="clear-btn"
-          title="Clear all tasks (localStorage)"
-        >
-          Clear All
-        </button>
       </div>
 
       <TaskList
         loading={loading}
         tasks={filtered}
-        onToggleComplete={(id, isComplete) =>
-          updateTask(id, { status: isComplete ? "completed" : "pending" })
-        }
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onSelectAll={selectAll}
+        onMarkSelectedComplete={markSelectedComplete}
         onDelete={deleteTask}
-        onUpdate={updateTask}
       />
     </div>
   );

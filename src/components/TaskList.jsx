@@ -1,4 +1,3 @@
-// src/components/TaskList.jsx
 "use client";
 import React from "react";
 import TaskItem from "./TaskItem";
@@ -6,22 +5,49 @@ import TaskItem from "./TaskItem";
 export default function TaskList({
   tasks = [],
   loading,
-  onToggleComplete,
+  selectedIds = [],
+  onToggleSelect,
+  onSelectAll,
+  onMarkSelectedComplete,
   onDelete,
-  onUpdate,
 }) {
   if (!loading && tasks.length === 0) {
     return <div className="empty">No tasks found</div>;
   }
 
+  const allSelected = tasks.length > 0 && selectedIds.length === tasks.length;
+
   return (
     <div className="table-wrap">
+      <div className="table-toolbar">
+        <div>
+          <button
+            className="btn"
+            onClick={onMarkSelectedComplete}
+            disabled={selectedIds.length === 0}
+          >
+            Mark as Complete
+          </button>
+          <span style={{ marginLeft: 10, color: "var(--muted)" }}>
+            {selectedIds.length > 0 ? `${selectedIds.length} selected` : ""}
+          </span>
+        </div>
+      </div>
+
       <table className="task-table">
         <thead>
           <tr>
+            <th>
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => onSelectAll(e.target.checked)}
+                aria-label="Select all visible tasks"
+              />
+            </th>
             <th>#</th>
             <th>Name</th>
-            <th>Value</th>
+            <th>Status</th>
             <th>Date</th>
             <th>Actions</th>
           </tr>
@@ -29,7 +55,7 @@ export default function TaskList({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan="5" className="center">
+              <td colSpan="6" className="center">
                 Loading...
               </td>
             </tr>
@@ -39,9 +65,9 @@ export default function TaskList({
                 key={task.id}
                 task={task}
                 index={idx}
-                onToggleComplete={onToggleComplete}
+                isSelected={selectedIds.includes(task.id)}
+                onToggleSelect={onToggleSelect}
                 onDelete={onDelete}
-                onUpdate={onUpdate}
               />
             ))
           )}
