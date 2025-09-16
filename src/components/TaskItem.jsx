@@ -1,53 +1,70 @@
-'use client'
+// src/components/TaskItem.jsx
+"use client";
 import React, { useState } from "react";
 
-export default function TaskItem({ task, index, updateTask }) {
+export default function TaskItem({
+  task,
+  index,
+  onToggleComplete,
+  onDelete,
+  onUpdate,
+}) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: task.name, value: task.value });
 
   const saveEdit = () => {
-    updateTask(task.id, { name: form.name, value: Number(form.value) || 0 });
+    if (!form.name.trim()) return;
+    onUpdate(task.id, { name: form.name.trim(), value: Number(form.value) || 0 });
     setEditing(false);
   };
 
+  const isCompleted = task.status === "completed";
+
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-2">{index + 1}</td>
-      <td className="px-4 py-2">
-        {editing ? (
+    <tr className={isCompleted ? "row-completed" : ""}>
+      <td>{index + 1}</td>
+      <td>
+        <label className="flex-row">
           <input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="px-2 py-1 border rounded"
+            type="checkbox"
+            checked={isCompleted}
+            onChange={(e) => onToggleComplete(task.id, e.target.checked)}
           />
-        ) : (
-          task.name
-        )}
+          {editing ? (
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          ) : (
+            <span className="task-name">{task.name}</span>
+          )}
+        </label>
       </td>
-      <td className="px-4 py-2">
+      <td>
         {editing ? (
           <input
             value={form.value}
+            type="number"
             onChange={(e) => setForm({ ...form, value: e.target.value })}
-            className="px-2 py-1 border rounded w-24"
+            className="value-input"
           />
         ) : (
           `$${task.value}`
         )}
       </td>
-      <td className="px-4 py-2">{task.date}</td>
-      <td className="px-4 py-2 flex gap-2">
+      <td>{task.date}</td>
+      <td className="actions">
         {editing ? (
           <>
-            <button
-              onClick={saveEdit}
-              className="px-2 py-1 rounded bg-green-600 text-white text-sm"
-            >
+            <button onClick={saveEdit} className="btn small">
               Save
             </button>
             <button
-              onClick={() => setEditing(false)}
-              className="px-2 py-1 rounded border text-sm"
+              onClick={() => {
+                setEditing(false);
+                setForm({ name: task.name, value: task.value });
+              }}
+              className="btn small ghost"
             >
               Cancel
             </button>
@@ -55,20 +72,19 @@ export default function TaskItem({ task, index, updateTask }) {
         ) : (
           <>
             <button
-              onClick={() => setEditing(true)}
-              className="px-2 py-1 rounded border text-sm"
+              onClick={() => {
+                setEditing(true);
+                setForm({ name: task.name, value: task.value });
+              }}
+              className="btn small"
             >
               Edit
             </button>
             <button
-              onClick={() =>
-                updateTask(task.id, {
-                  status: task.status === "deleted" ? "paid" : "deleted",
-                })
-              }
-              className="px-2 py-1 rounded border text-sm"
+              onClick={() => onDelete(task.id)}
+              className="btn small danger"
             >
-              {task.status === "deleted" ? "Restore" : "Delete"}
+              Delete
             </button>
           </>
         )}

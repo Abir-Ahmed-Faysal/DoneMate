@@ -1,28 +1,35 @@
-'use client'
+// src/components/TaskList.jsx
+"use client";
 import React from "react";
 import TaskItem from "./TaskItem";
 
-export default function TaskList({ tasks, loading, updateTask }) {
-  if (tasks.length === 0 && !loading) {
-    return <div className="text-center text-gray-500">No tasks found</div>;
+export default function TaskList({
+  tasks = [],
+  loading,
+  onToggleComplete,
+  onDelete,
+  onUpdate,
+}) {
+  if (!loading && tasks.length === 0) {
+    return <div className="empty">No tasks found</div>;
   }
 
   return (
-    <div className="bg-white rounded shadow">
-      <table className="w-full divide-y">
+    <div className="table-wrap">
+      <table className="task-table">
         <thead>
-          <tr className="bg-gray-50">
-            <th className="px-4 py-2 text-left">#</th>
-            <th className="px-4 py-2 text-left">Name</th>
-            <th className="px-4 py-2 text-left">Value</th>
-            <th className="px-4 py-2 text-left">Date</th>
-            <th className="px-4 py-2 text-left">Actions</th>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Value</th>
+            <th>Date</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan="5" className="text-center py-4">
+              <td colSpan="5" className="center">
                 Loading...
               </td>
             </tr>
@@ -32,7 +39,9 @@ export default function TaskList({ tasks, loading, updateTask }) {
                 key={task.id}
                 task={task}
                 index={idx}
-                updateTask={updateTask}
+                onToggleComplete={onToggleComplete}
+                onDelete={onDelete}
+                onUpdate={onUpdate}
               />
             ))
           )}

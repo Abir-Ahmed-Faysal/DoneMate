@@ -1,8 +1,16 @@
+// src/App.jsx
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import TaskInput from "./TaskInput";
+import React, { useEffect, useMemo, useState } from "react";
 import TaskList from "./TaskList";
-import { addToLocal, getFromLocal } from "./SavetoLocal";
+import {
+  getFromLocal,
+  addToLocal,
+  updateInLocal,
+  deleteFromLocal,
+  saveToLocal,
+} from "../utilities/SavetoLocal.js";
+import "../style.css";
+import TaskInput from "./TaskInput";
 
 export default function App() {
   const [items, setItems] = useState([]);
@@ -10,69 +18,67 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All");
 
-  const tabs = ["All", "Unpaid", "Deleted"];
+  const tabs = ["All", "Pending", "Completed"];
 
   useEffect(() => {
     setLoading(true);
-    getFromLocal("todos")
-      .then((raw) => {
-        console.log(raw);
-        setItems(raw ? raw : []);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Failed to load todos:", error);
-        setItems([]);
-        setLoading(false);
-      });
+    const stored = getFromLocal("todos");
+    setItems(stored);
+    setLoading(false);
   }, []);
 
-
-
-
-  useEffect(() => {
-    addToLocal("todos", JSON.stringify(items));
-  }, [items]);
-
-  const addTask = (task) => {
+  // Add a new task and persist
+  const addTask = ({ name, value }) => {
     const newTask = {
       id: Date.now(),
-      ...task,
-      status: "unpaid",
-      read: false,
+      name,
+      value: Number(value) || 0,
+      status: "pending",
+      date: new Date().toLocaleString(),
     };
-    setItems([newTask, ...items]);
+    const updated = addToLocal("todos", newTask);
+    setItems(updated);
   };
 
+  // Update an existing task (partial updates allowed)
   const updateTask = (id, updates) => {
-    setItems(items.map((it) => (it.id === id ? { ...it, ...updates } : it)));
+    const updatedArray = items.map((it) =>
+      it.id === id ? { ...it, ...updates } : it
+    );
+    setItems(updatedArray);
+    updateInLocal("todos", { id, ...updates });
+  };
+
+  // Delete task completely
+  const deleteTask = (id) => {
+    const updated = deleteFromLocal("todos", id);
+    setItems(updated);
   };
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
+    const q = query.trim().toLowerCase();
     return items.filter((item) => {
-      if (activeTab === "Unpaid" && item.status !== "unpaid") return false;
-      if (activeTab === "Deleted" && item.status !== "deleted") return false;
+      if (activeTab === "Pending" && item.status !== "pending") return false;
+      if (activeTab === "Completed" && item.status !== "completed")
+        return false;
       if (!q) return true;
       return (
-        item.name.toLowerCase().includes(q) ||
+        (item.name && item.name.toLowerCase().includes(q)) ||
         String(item.value).toLowerCase().includes(q)
       );
     });
   }, [items, activeTab, query]);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <header className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Task Dashboard</h1>
-        <nav className="flex gap-2">
+    <div className="app-container">
+      <header className="header">
+        <h1>Task Dashboard</h1>
+        <nav className="tabs">
           {tabs.map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`px-3 py-1 rounded-full text-sm ${
-                activeTab === t ? "bg-indigo-600 text-white" : "bg-white border"
-              }`}
+              className={`tab ${activeTab === t ? "tab-active" : ""}`}
             >
               {t}
             </button>
@@ -82,16 +88,34 @@ export default function App() {
 
       <TaskInput addTask={addTask} />
 
-      <div className="mb-4">
+      <div className="search-row">
         <input
           placeholder="Search tasks..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="px-3 py-2 border rounded w-full"
+          className="search-input"
         />
+        <button
+          onClick={() => {
+            setItems([]);
+            saveToLocal("todos", []);
+          }}
+          className="clear-btn"
+          title="Clear all tasks (localStorage)"
+        >
+          Clear All
+        </button>
       </div>
 
-      <TaskList loading={loading} tasks={filtered} updateTask={updateTask} />
+      <TaskList
+        loading={loading}
+        tasks={filtered}
+        onToggleComplete={(id, isComplete) =>
+          updateTask(id, { status: isComplete ? "completed" : "pending" })
+        }
+        onDelete={deleteTask}
+        onUpdate={updateTask}
+      />
     </div>
   );
 }
