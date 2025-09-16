@@ -2,8 +2,8 @@
 import React from "react";
 import TaskItem from "./TaskItem";
 
-export default function TaskList({ tasks, updateTask }) {
-  if (tasks.length === 0) {
+export default function TaskList({ tasks, loading, updateTask }) {
+  if (tasks.length === 0 && !loading) {
     return <div className="text-center text-gray-500">No tasks found</div>;
   }
 
@@ -20,14 +20,22 @@ export default function TaskList({ tasks, updateTask }) {
           </tr>
         </thead>
         <tbody>
-          {tasks.map((task, idx) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              index={idx}
-              updateTask={updateTask}
-            />
-          ))}
+          {loading ? (
+            <tr>
+              <td colSpan="5" className="text-center py-4">
+                Loading...
+              </td>
+            </tr>
+          ) : (
+            tasks.map((task, idx) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                index={idx}
+                updateTask={updateTask}
+              />
+            ))
+          )}
         </tbody>
       </table>
     </div>

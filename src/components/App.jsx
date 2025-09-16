@@ -6,33 +6,38 @@ import { addToLocal, getFromLocal } from "./SavetoLocal";
 
 export default function App() {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All");
 
   const tabs = ["All", "Unpaid", "Deleted"];
 
-  
   useEffect(() => {
-    try {
-      const raw = getFromLocal("todos");
-      setItems(raw ? JSON.parse(raw) : []);
-    } catch {
-      setItems([]);
-    }
+    setLoading(true);
+    getFromLocal("todos")
+      .then((raw) => {
+        console.log(raw);
+        setItems(raw ? raw : []);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to load todos:", error);
+        setItems([]);
+        setLoading(false);
+      });
   }, []);
 
 
 
-  // Persist tasks to localStorage
+
   useEffect(() => {
-   addToLocal("todos", JSON.stringify(items));
+    addToLocal("todos", JSON.stringify(items));
   }, [items]);
 
   const addTask = (task) => {
     const newTask = {
       id: Date.now(),
       ...task,
-      date: new Date().toISOString().slice(0, 10),
       status: "unpaid",
       read: false,
     };
@@ -86,7 +91,7 @@ export default function App() {
         />
       </div>
 
-      <TaskList tasks={filtered} updateTask={updateTask} />
+      <TaskList loading={loading} tasks={filtered} updateTask={updateTask} />
     </div>
   );
 }
