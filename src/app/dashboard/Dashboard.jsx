@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { getFromLocal } from "../../components/SavetoLocal"; // optional helper (keeps compatibility)
+import { getFromLocal } from "../../utilities/SavetoLocal"; // optional helper (keeps compatibility)
 
 // Fixed dashboard component
 // Key fixes done:
